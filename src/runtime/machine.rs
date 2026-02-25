@@ -104,22 +104,7 @@ impl<'a> Vm<'a> {
 }
 
 fn report_runtime_error(chunk: &Chunk, err: &RuntimeError) {
-    match *err {
-        RuntimeError::StackUnderflow { needed, found, ip } => {
-            let line = chunk.line_at(ip).unwrap_or(0);
-            eprintln!(
-                "[runtime error] line {line} @ ip {ip}: stack underflow (needed {needed}, found {found})"
-            );
-        }
-        RuntimeError::BadConstantIndex { index, ip } => {
-            let line = chunk.line_at(ip).unwrap_or(0);
-            eprintln!(
-                "[runtime error] line {line} @ ip {ip}: constant index out of range ({index})"
-            );
-        }
-        RuntimeError::InvalidOpCode { opcode, ip } => {
-            let line = chunk.line_at(ip).unwrap_or(0);
-            eprintln!("[runtime error] line {line} @ ip {ip}: invalid opcode {opcode}");
-        }
-    }
+    let ip = err.ip();
+    let line = chunk.line_at(ip).unwrap_or(0);
+    eprintln!("[runtime error] line {line} @ ip {ip}: {err}");
 }

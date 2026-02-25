@@ -13,3 +13,13 @@ pub enum RuntimeError {
     #[error("Invalid opcode {opcode} at ip {ip}")]
     InvalidOpCode { opcode: u8, ip: usize },
 }
+
+impl RuntimeError {
+    pub fn ip(&self) -> usize {
+        match *self {
+            RuntimeError::StackUnderflow { ip, .. } => ip,
+            RuntimeError::BadConstantIndex { ip, .. } => ip,
+            RuntimeError::InvalidOpCode { ip, .. } => ip,
+        }
+    }
+}
