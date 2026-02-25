@@ -1,5 +1,5 @@
-use crate::line::LineTracker;
-use crate::value::Value;
+use crate::Value;
+use crate::bytecode::line::LineTracker;
 
 #[repr(u8)]
 pub enum OpType {
@@ -42,10 +42,10 @@ impl Chunk {
         let index = (self.constants.len() - 1) as u32;
 
         if index <= 0xFF {
-            self.write_byte(OpType::Constant as u8, line);
+            self.write_op(OpType::Constant, line);
             self.write_byte(index as u8, line);
         } else if index <= 0xFF_FFFF {
-            self.write_byte(OpType::ConstantLong as u8, line);
+            self.write_op(OpType::ConstantLong, line);
             self.write_byte((index & 0xFF) as u8, line);
             self.write_byte(((index >> 8) & 0xFF) as u8, line);
             self.write_byte(((index >> 16) & 0xFF) as u8, line);

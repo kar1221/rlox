@@ -4,8 +4,12 @@ use std::ops;
 pub struct Value(f64);
 
 impl Value {
-    pub fn number(n: f64) -> Self { Self(n) }
-    pub fn as_f64(self) -> f64 { self.0 }
+    pub fn number(n: f64) -> Self {
+        Self(n)
+    }
+    pub fn as_f64(self) -> f64 {
+        self.0
+    }
 }
 
 impl ops::Add for Value {

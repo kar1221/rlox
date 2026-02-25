@@ -1,17 +1,19 @@
-use crate::chunk::{Chunk, OpType};
-use crate::debug::{disassemble_instruction, stack_tracing};
-use crate::error::RuntimeError;
-use crate::value::Value;
+use crate::Chunk;
+use crate::OpType;
+use crate::Value;
+use crate::debug::tracer::disassemble_instruction;
+use crate::debug::tracer::stack_tracing;
+use crate::runtime::error::RuntimeError;
 
-pub struct VM<'a> {
+pub struct Vm<'a> {
     chunk: &'a Chunk,
     ip: usize,
     stack: Vec<Value>,
 }
 
-impl<'a> VM<'a> {
+impl<'a> Vm<'a> {
     pub fn new(chunk: &'a Chunk) -> Self {
-        VM {
+        Vm {
             chunk,
             ip: 0,
             stack: Vec::new(),

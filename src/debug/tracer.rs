@@ -1,5 +1,9 @@
-use crate::chunk::{Chunk, OpType};
-use crate::value::Value;
+#[cfg(debug_assertions)]
+use crate::bytecode::chunk::Chunk;
+#[cfg(debug_assertions)]
+use crate::bytecode::chunk::OpType;
+#[cfg(debug_assertions)]
+use crate::bytecode::value::Value;
 
 const HEADER_LENGTH: usize = 20;
 const LINE_PADDING: usize = 4;

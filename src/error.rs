@@ -1,15 +1,9 @@
-#[derive(Debug)]
-pub enum RuntimeError {
-    StackUnderflow { needed: usize, found: usize, ip: usize },
-    BadConstantIndex { index: usize, ip: usize },
-    InvalidOpCode { opcode: u8, ip: usize }
-}
+use thiserror::Error;
 
-pub enum CompilationError {
-    Placeholder
-}
+use crate::runtime::error::RuntimeError;
 
+#[derive(Debug, Error)]
 pub enum Error {
-    RuntimeError(RuntimeError),
-    CompilationError(CompilationError)
+    #[error(transparent)]
+    Runtime(#[from] RuntimeError),
 }

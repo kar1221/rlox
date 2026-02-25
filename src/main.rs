@@ -1,14 +1,13 @@
-mod chunk;
+use crate::bytecode::chunk::Chunk;
+use crate::bytecode::chunk::OpType;
+use crate::bytecode::value::Value;
+use crate::debug::tracer::disassemble_chunk;
+use crate::runtime::machine::Vm;
+
+mod bytecode;
 mod debug;
 mod error;
-mod line;
-mod value;
-mod vm;
-
-use crate::chunk::{Chunk, OpType};
-use crate::debug::disassemble_chunk;
-use crate::value::Value;
-use crate::vm::VM;
+mod runtime;
 
 fn main() {
     let mut chunk = Chunk::new();
@@ -23,6 +22,6 @@ fn main() {
 
     disassemble_chunk(&chunk, "Before interpreter");
     println!();
-    let mut vm = VM::new(&chunk);
+    let mut vm = Vm::new(&chunk);
     vm.interpret();
 }
