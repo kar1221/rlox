@@ -4,24 +4,39 @@ use crate::bytecode::value::Value;
 use crate::debug::tracer::disassemble_chunk;
 use crate::runtime::machine::Vm;
 
+use std::env;
+use std::io;
+use std::process::exit;
+
 mod bytecode;
+mod compiler;
 mod debug;
 mod error;
 mod runtime;
 
 fn main() {
-    let mut chunk = Chunk::new();
+    let args: Vec<String> = env::args().collect();
 
-    chunk.write_constant(Value::number(1.0), 1);
-    chunk.write_constant(Value::number(5.0), 1);
-    chunk.write_op(OpType::Add, 1);
-    chunk.write_op(OpType::Negate, 1);
-    chunk.write_constant(Value::number(2.0), 1);
-    chunk.write_op(OpType::Multiply, 1);
-    chunk.write_op(OpType::Return, 1);
-
-    disassemble_chunk(&chunk, "Before interpreter");
-    println!();
-    let mut vm = Vm::new(&chunk);
-    vm.interpret();
+    match args.len() {
+        1 => repl(),
+        2 => run_file(&args[1]),
+        _ => {
+            eprintln!("Usage: rlox [path]");
+            exit(64);
+        }
+    }
 }
+
+fn repl() {
+    let mut input = String::new();
+    print!("> ");
+
+    loop {
+        input.clear();
+        if io::stdin().read_line(&mut input).is_err() {
+            continue;
+        }
+    }
+}
+
+fn run_file(source_path: &str) {}
