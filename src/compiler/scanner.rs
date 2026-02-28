@@ -92,7 +92,7 @@ impl<'a> Scanner<'a> {
             c if c.is_ascii_digit() => self.number(),
             c if c.is_ascii_alphabetic() => self.identifier(),
 
-            _ => self.make_error_token(),
+            _ => self.make_error_token("Unexpected Character"),
         }
     }
 
@@ -115,7 +115,7 @@ impl<'a> Scanner<'a> {
         }
 
         if self.is_at_end() {
-            return self.make_error_token();
+            return self.make_error_token("Unterminated String.");
         }
 
         self.advance_char();
@@ -203,11 +203,17 @@ impl<'a> Scanner<'a> {
             kind,
             lexeme: &self.source[self.start..self.current],
             line: self.line,
+            error: None,
         }
     }
 
-    fn make_error_token(&self) -> Token<'a> {
-        self.make_token(TokenKind::Error)
+    fn make_error_token(&self, msg: &'static str) -> Token<'a> {
+        Token {
+            kind: TokenKind::Error,
+            lexeme: &self.source[self.start..self.current], // can be "" or the bad char slice
+            line: self.line,
+            error: Some(msg),
+        }
     }
 }
 

@@ -1,7 +1,7 @@
+use crate::compiler::compile::compile;
 use crate::bytecode::chunk::Chunk;
 use crate::bytecode::chunk::OpType;
 use crate::bytecode::value::Value;
-use crate::debug::tracer::disassemble_chunk;
 use crate::runtime::machine::Vm;
 
 use std::env;
@@ -13,6 +13,7 @@ mod compiler;
 mod debug;
 mod error;
 mod runtime;
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -29,6 +30,7 @@ fn main() {
 
 fn repl() {
     let mut input = String::new();
+    let mut vm = Vm::new();
     print!("> ");
 
     loop {
@@ -36,7 +38,11 @@ fn repl() {
         if io::stdin().read_line(&mut input).is_err() {
             continue;
         }
+
+        vm.interpret(&input);
     }
 }
 
-fn run_file(source_path: &str) {}
+fn run_file(source_path: &str) {
+
+}

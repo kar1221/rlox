@@ -1,4 +1,5 @@
 #[repr(u8)]
+#[derive(PartialEq, Clone, Debug, Copy)]
 pub enum TokenKind {
     LeftParen,
     RightParen,
@@ -43,12 +44,19 @@ pub enum TokenKind {
     While,
 
     Error,
-    Eof
+    Eof,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct Token<'a> {
     pub kind: TokenKind,
     pub lexeme: &'a str,
     pub line: usize,
+    pub error: Option<&'static str>
 }
 
+impl <'a> Token<'a> {
+    pub fn is_error(&self) -> bool {
+        self.kind == TokenKind::Error
+    }
+}

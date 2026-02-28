@@ -1,38 +1,49 @@
 use crate::Chunk;
 use crate::OpType;
 use crate::Value;
+use crate::compiler::compile::compile;
 use crate::debug::tracer::disassemble_instruction;
 use crate::debug::tracer::stack_tracing;
 use crate::runtime::error::RuntimeError;
 
-pub struct Vm<'a> {
-    chunk: &'a Chunk,
+pub struct Vm {
     ip: usize,
     stack: Vec<Value>,
 }
 
-impl<'a> Vm<'a> {
-    pub fn new(chunk: &'a Chunk) -> Self {
+impl Vm {
+    pub fn new() -> Self {
         Vm {
-            chunk,
             ip: 0,
             stack: Vec::new(),
         }
     }
 
-    pub fn interpret(&mut self) {
-        if let Err(e) = self.run() {
-            report_runtime_error(self.chunk, &e);
+    pub fn interpret(&mut self, source: &str) {
+        match compile(source) {
+            Ok(chunk) => {
+                if let Err(e) = self.run(&chunk) {
+                    report_runtime_error(&chunk, &e);
+                }
+            }
+            Err(errs) => {
+                for e in errs {
+                    eprintln!("{e}");
+                }
+            }
         }
     }
 
-    fn run(&mut self) -> Result<(), RuntimeError> {
+    fn run(&mut self, chunk: &Chunk) -> Result<(), RuntimeError> {
+        self.ip = 0;
+        self.stack.clear();
+
         loop {
             stack_tracing(&self.stack);
-            disassemble_instruction(self.chunk, self.ip);
+            disassemble_instruction(chunk, self.ip);
 
-            let instruction = self.read_byte();
             let instruction_ip = self.ip;
+            let instruction = self.read_byte(chunk);
 
             match instruction {
                 x if x == OpType::Return as u8 => {
@@ -41,8 +52,8 @@ impl<'a> Vm<'a> {
                     return Ok(());
                 }
                 x if x == OpType::Constant as u8 => {
-                    let offset = self.read_byte();
-                    let constant = self.chunk.value_at(offset as usize).ok_or(
+                    let offset = self.read_byte(chunk);
+                    let constant = chunk.value_at(offset as usize).ok_or(
                         RuntimeError::BadConstantIndex {
                             index: offset as usize,
                             ip: instruction_ip,
@@ -68,8 +79,8 @@ impl<'a> Vm<'a> {
         }
     }
 
-    fn read_byte(&mut self) -> u8 {
-        let b = self.chunk.code()[self.ip];
+    fn read_byte(&mut self, chunk: &Chunk) -> u8 {
+        let b = chunk.code()[self.ip];
         self.ip += 1;
         b
     }
@@ -77,7 +88,7 @@ impl<'a> Vm<'a> {
     fn pop(&mut self) -> Result<Value, RuntimeError> {
         self.stack.pop().ok_or(RuntimeError::StackUnderflow {
             needed: 1,
-            found: 0,
+            found: self.stack.len(),
             ip: self.ip,
         })
     }
