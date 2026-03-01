@@ -60,6 +60,7 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
         x if x == OpType::Negate as u8 => simple_instruction("OP_NEGATE", offset),
         x if x == OpType::Subtract as u8 => simple_instruction("OP_SUBTRACT", offset),
         x if x == OpType::Add as u8 => simple_instruction("OP_ADD", offset),
+        x if x == OpType::Stringify as u8 => simple_instruction("OP_STRINGIFY", offset),
         _ => {
             print!("Unknown opcode {instruction}");
             offset + 1
@@ -97,7 +98,7 @@ fn constant_instruction(name: &str, chunk: &Chunk, offset: usize) -> usize {
             constant_width = CONSTANT_PADDING
         );
         let value = chunk.get_constant().get(*constant as usize);
-        print_value(*value.unwrap());
+        print_value(value.unwrap());
         println!();
     }
 
@@ -121,7 +122,7 @@ fn constant_long_instruction(name: &str, chunk: &Chunk, offset: usize) -> usize 
     );
 
     if let Some(c) = chunk.get_constant().get(constant_index as usize) {
-        print_value(*c);
+        print_value(c);
     }
 
     println!();
@@ -129,6 +130,6 @@ fn constant_long_instruction(name: &str, chunk: &Chunk, offset: usize) -> usize 
     offset + 4
 }
 
-fn print_value(v: Value) {
+fn print_value(v: &Value) {
     print!("{v}");
 }

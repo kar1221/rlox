@@ -11,6 +11,10 @@ pub enum OpType {
     Subtract = 5,
     Multiply = 6,
     Divide = 7,
+    Nil = 8,
+    True = 9,
+    False = 10,
+    Stringify = 11
 }
 
 pub struct Chunk {

@@ -1,7 +1,7 @@
 use crate::Chunk;
 use crate::OpType;
 use crate::Value;
-use crate::compiler::compile::compile;
+use crate::compiler::compile;
 use crate::debug::tracer::disassemble_instruction;
 use crate::debug::tracer::stack_tracing;
 use crate::runtime::error::RuntimeError;
@@ -53,22 +53,27 @@ impl Vm {
                 }
                 x if x == OpType::Constant as u8 => {
                     let offset = self.read_byte(chunk);
-                    let constant = chunk.value_at(offset as usize).ok_or(
-                        RuntimeError::BadConstantIndex {
-                            index: offset as usize,
-                            ip: instruction_ip,
-                        },
-                    )?;
+                    let constant =
+                        chunk
+                            .value_at(offset as usize)
+                            .ok_or(RuntimeError::BadConstantIndex {
+                                index: offset as usize,
+                                ip: instruction_ip,
+                            })?;
                     self.push(constant);
                 }
                 x if x == OpType::Negate as u8 => {
                     let v = self.pop()?;
-                    self.push(-v);
+                    self.push(v.negate(instruction_ip)?);
                 }
-                x if x == OpType::Add as u8 => self.binary_op(|a, b| a + b)?,
-                x if x == OpType::Subtract as u8 => self.binary_op(|a, b| a - b)?,
-                x if x == OpType::Multiply as u8 => self.binary_op(|a, b| a * b)?,
-                x if x == OpType::Divide as u8 => self.binary_op(|a, b| a / b)?,
+                x if x == OpType::Add as u8 => self.binary_op(instruction_ip, Value::add)?,
+                x if x == OpType::Subtract as u8 => self.binary_op(instruction_ip, Value::sub)?,
+                x if x == OpType::Multiply as u8 => self.binary_op(instruction_ip, Value::mul)?,
+                x if x == OpType::Divide as u8 => self.binary_op(instruction_ip, Value::div)?,
+                x if x == OpType::Nil as u8 => self.push(Value::Nil),
+                x if x == OpType::True as u8 => self.push(Value::Boolean(true)),
+                x if x == OpType::False as u8 => self.push(Value::Boolean(false)),
+                x if x == OpType::Stringify as u8 => self.stringify()?,
                 _ => {
                     return Err(RuntimeError::InvalidOpCode {
                         opcode: instruction,
@@ -100,12 +105,24 @@ impl Vm {
         Ok((a, b))
     }
 
-    fn binary_op<F>(&mut self, f: F) -> Result<(), RuntimeError>
+    fn binary_op<F>(&mut self, ip: usize, f: F) -> Result<(), RuntimeError>
     where
-        F: FnOnce(Value, Value) -> Value,
+        F: FnOnce(Value, Value, usize) -> Result<Value, RuntimeError>,
     {
         let (a, b) = self.pop2()?;
-        self.push(f(a, b));
+        self.push(f(a, b, ip)?);
+        Ok(())
+    }
+
+    fn stringify(&mut self) -> Result<(), RuntimeError> {
+        let value = self.pop()?;
+        let str = match value {
+            Value::Number(n) => format!("{}", n),
+            Value::Boolean(b) => format!("{}", b),
+            Value::String(s) => s,
+            Value::Nil => "nil".to_string(),
+        };
+        self.push(Value::String(str));
         Ok(())
     }
 

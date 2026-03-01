@@ -1,57 +1,96 @@
-use std::ops;
+use crate::runtime::error::RuntimeError;
 
-#[derive(Clone, Debug, Copy)]
-pub struct Value(f64);
+#[derive(Clone, Debug)]
+pub enum Value {
+    Number(f64),
+    Boolean(bool),
+    String(String),
+    Nil,
+}
 
 impl Value {
-    pub fn number(n: f64) -> Self {
-        Self(n)
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            Value::Number(_) => "number",
+            Value::Boolean(_) => "boolean",
+            Value::Nil => "nil",
+            Value::String(_) => "string",
+        }
     }
-    pub fn as_f64(self) -> f64 {
-        self.0
+
+    pub fn negate(self, ip: usize) -> Result<Value, RuntimeError> {
+        match self {
+            Value::Number(n) => Ok(Value::Number(-n)),
+            other => Err(RuntimeError::UnaryTypeError {
+                op: "negate",
+                got: other.type_name(),
+                ip,
+            }),
+        }
     }
-}
 
-impl ops::Add for Value {
-    type Output = Value;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
+    pub fn add(self, rhs: Value, ip: usize) -> Result<Value, RuntimeError> {
+        match (self, rhs) {
+            (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a + b)),
+            (Value::String(a), Value::String(b)) => {
+                let mut result = String::new();
+                result.push_str(&a);
+                result.push_str(&b);
+                Ok(Value::String(result))
+            }
+            (a, b) => Err(RuntimeError::BinaryTypeError {
+                op: "+",
+                a: a.type_name(),
+                b: b.type_name(),
+                ip,
+            }),
+        }
     }
-}
 
-impl ops::Neg for Value {
-    type Output = Value;
-
-    fn neg(self) -> Self::Output {
-        Value(-self.0)
+    pub fn sub(self, rhs: Value, ip: usize) -> Result<Value, RuntimeError> {
+        match (self, rhs) {
+            (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a - b)),
+            (a, b) => Err(RuntimeError::BinaryTypeError {
+                op: "-",
+                a: a.type_name(),
+                b: b.type_name(),
+                ip,
+            }),
+        }
     }
-}
 
-impl ops::Sub for Value {
-    type Output = Value;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0 - rhs.0)
+    pub fn mul(self, rhs: Value, ip: usize) -> Result<Value, RuntimeError> {
+        match (self, rhs) {
+            (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a * b)),
+            (a, b) => Err(RuntimeError::BinaryTypeError {
+                op: "*",
+                a: a.type_name(),
+                b: b.type_name(),
+                ip,
+            }),
+        }
     }
-}
 
-impl ops::Mul for Value {
-    type Output = Value;
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0 * rhs.0)
-    }
-}
-
-impl ops::Div for Value {
-    type Output = Value;
-    fn div(self, rhs: Self) -> Self::Output {
-        Self(self.0 / rhs.0)
+    pub fn div(self, rhs: Value, ip: usize) -> Result<Value, RuntimeError> {
+        match (self, rhs) {
+            (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a / b)),
+            (a, b) => Err(RuntimeError::BinaryTypeError {
+                op: "/",
+                a: a.type_name(),
+                b: b.type_name(),
+                ip,
+            }),
+        }
     }
 }
 
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_f64())
+        match self {
+            Value::Number(n) => write!(f, "{n}"),
+            Value::Boolean(b) => write!(f, "{b}"),
+            Value::Nil => write!(f, "nil"),
+            Value::String(s) => write!(f, "{s}"),
+        }
     }
 }

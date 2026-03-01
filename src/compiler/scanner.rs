@@ -1,10 +1,19 @@
 use crate::compiler::token::{Token, TokenKind};
 
+#[derive(PartialEq)]
+enum ScanMode {
+    None,
+    String,
+    Interpolation,
+}
+
 pub struct Scanner<'a> {
     source: &'a str,
     start: usize,
     current: usize,
     line: usize,
+    mode: ScanMode,
+    interp_depth: usize,
 }
 
 impl<'a> Scanner<'a> {
@@ -14,37 +23,65 @@ impl<'a> Scanner<'a> {
             current: 0,
             start: 0,
             line: 1,
+            mode: ScanMode::None,
+            interp_depth: 0,
         }
     }
 
     pub fn scan_token(&mut self) -> Token<'a> {
-        self.skip_whitespaces();
-        self.start = self.current;
+        match self.mode {
+            ScanMode::None => {
+                self.skip_whitespaces();
+                self.start = self.current;
 
-        if self.is_at_end() {
-            return self.make_token(TokenKind::Eof);
+                if self.is_at_end() {
+                    return self.make_token(TokenKind::Eof);
+                }
+
+                let current_char = self.advance_char();
+
+                self.scan_token_from_char(current_char)
+            }
+            ScanMode::String => {
+                self.start = self.current;
+                self.string_part_or_end()
+            }
+            ScanMode::Interpolation => {
+                self.start = self.current;
+                self.interpolation_start_or_end()
+            }
         }
-
-        let current_char = self.advance_char();
-
-        self.scan_token_from_char(current_char)
     }
 
     fn scan_token_from_char(&mut self, c: char) -> Token<'a> {
         match c {
             '(' => self.make_token(TokenKind::LeftParen),
             ')' => self.make_token(TokenKind::RightParen),
-            '{' => self.make_token(TokenKind::LeftBrace),
-            '}' => self.make_token(TokenKind::RightBrace),
+            '{' => {
+                if self.interp_depth > 0 {
+                    self.interp_depth += 1;
+                }
+
+                self.make_token(TokenKind::LeftBrace)
+            }
+            '}' => {
+                if self.interp_depth > 0 {
+                    self.interp_depth -= 1;
+
+                    if self.interp_depth == 0 {
+                        self.mode = ScanMode::String;
+                        return self.make_token(TokenKind::InterpEnd);
+                    }
+                }
+                self.make_token(TokenKind::RightBrace)
+            }
             ',' => self.make_token(TokenKind::Comma),
             '.' => self.make_token(TokenKind::Dot),
             ';' => self.make_token(TokenKind::SemiColon),
 
-            // TODO: Add assignment operator later
             '+' => self.make_token(TokenKind::Plus),
             '-' => self.make_token(TokenKind::Minus),
             '*' => self.make_token(TokenKind::Star),
-            // TODO: Add comments
             '/' => self.make_token(TokenKind::Slash),
 
             '!' => {
@@ -90,7 +127,7 @@ impl<'a> Scanner<'a> {
             '"' => self.string(),
 
             c if c.is_ascii_digit() => self.number(),
-            c if c.is_ascii_alphabetic() => self.identifier(),
+            c if is_alpha(c) => self.identifier(),
 
             _ => self.make_error_token("Unexpected Character"),
         }
@@ -106,20 +143,58 @@ impl<'a> Scanner<'a> {
         self.make_token(kind)
     }
 
-    fn string(&mut self) -> Token<'a> {
+    fn string_part_or_end(&mut self) -> Token<'a> {
+        if self.peek_char() == Some('"') {
+            self.advance_char();
+            self.mode = ScanMode::None;
+            return self.make_token(TokenKind::StringEnd);
+        }
+
         while self.peek_char() != Some('"') && !self.is_at_end() {
             if self.peek_char() == Some('\n') {
                 self.line += 1;
             }
+
+            if self.peek_char() == Some('$') {
+                self.mode = ScanMode::Interpolation;
+                return self.make_token(TokenKind::StringPart);
+            }
+
             self.advance_char();
         }
 
         if self.is_at_end() {
-            return self.make_error_token("Unterminated String.");
+            return self.make_error_token("Unterminated string.");
         }
 
-        self.advance_char();
-        self.make_token(TokenKind::String)
+        self.make_token(TokenKind::StringPart)
+    }
+
+    fn interpolation_start_or_end(&mut self) -> Token<'a> {
+        if !self.consume('$') {
+            self.mode = ScanMode::String;
+            return self.make_error_token("Expect '$' to start interpolation.");
+        }
+
+        if !self.consume('{') {
+            self.mode = ScanMode::String;
+            return self.make_error_token("Expect '{' after '$' in interpolation.");
+        }
+
+        self.interp_depth = 1;
+        self.mode = ScanMode::None;
+        self.make_token(TokenKind::InterpStart)
+    }
+
+    fn string(&mut self) -> Token<'a> {
+        self.mode = ScanMode::String;
+        self.start = self.current;
+
+        if self.peek_char() == Some('"') {
+            return self.make_token(TokenKind::StringPart);
+        }
+
+        self.string_part_or_end()
     }
 
     fn number(&mut self) -> Token<'a> {
@@ -192,6 +267,15 @@ impl<'a> Scanner<'a> {
 
         self.current += ch.len_utf8();
         ch
+    }
+
+    fn consume(&mut self, ch: char) -> bool {
+        if self.peek_char() == Some(ch) {
+            self.advance_char();
+            return true;
+        }
+
+        false
     }
 
     fn is_at_end(&self) -> bool {

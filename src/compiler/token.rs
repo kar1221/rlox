@@ -23,7 +23,10 @@ pub enum TokenKind {
     LessEqual,
 
     Identifier,
-    String,
+    StringPart,
+    StringEnd,
+    InterpStart,
+    InterpEnd,
     Number,
 
     And,
@@ -53,10 +56,4 @@ pub struct Token<'a> {
     pub lexeme: &'a str,
     pub line: usize,
     pub error: Option<&'static str>
-}
-
-impl <'a> Token<'a> {
-    pub fn is_error(&self) -> bool {
-        self.kind == TokenKind::Error
-    }
 }

@@ -12,6 +12,21 @@ pub enum RuntimeError {
     BadConstantIndex { index: usize, ip: usize },
     #[error("Invalid opcode {opcode} at ip {ip}")]
     InvalidOpCode { opcode: u8, ip: usize },
+
+    #[error("Type error at ip {ip}: {op} expected number(s), got {a} and {b}")]
+    BinaryTypeError {
+        op: &'static str,
+        a: &'static str,
+        b: &'static str,
+        ip: usize,
+    },
+
+    #[error("Type error at ip {ip}: {op} expected number, got {got}")]
+    UnaryTypeError {
+        op: &'static str,
+        got: &'static str,
+        ip: usize,
+    },
 }
 
 impl RuntimeError {
@@ -20,6 +35,8 @@ impl RuntimeError {
             RuntimeError::StackUnderflow { ip, .. } => ip,
             RuntimeError::BadConstantIndex { ip, .. } => ip,
             RuntimeError::InvalidOpCode { ip, .. } => ip,
+            RuntimeError::BinaryTypeError { ip, .. } => ip,
+            RuntimeError::UnaryTypeError { ip, .. } => ip,
         }
     }
 }

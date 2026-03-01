@@ -17,20 +17,23 @@ pub enum Where {
 
 #[derive(Debug, Clone, Error)]
 pub enum CompileErrorKind {
-    #[error("Unexpected character.")]
-    UnexpectedCharacter,
-
     #[error("Expected expression.")]
     ExpectedExpression,
+
+    #[error("Expect end of expression.")]
+    ExpectEndOfExpression,
+
+    #[error("Expect '}}' after expression.")]
+    ExpectRightBracket,
 
     #[error("Expect ')' after expression.")]
     ExpectRightParen,
 
-    #[error("Expect ';' after value.")]
-    ExpectSemicolon,
+    #[error("Unterminated String.")]
+    UnterminatedString,
 
     #[error("{0}")]
-    Message(String),
+    Message(&'static str),
 }
 
 impl CompileError {

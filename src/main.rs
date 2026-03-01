@@ -1,17 +1,17 @@
-use crate::compiler::compile::compile;
 use crate::bytecode::chunk::Chunk;
 use crate::bytecode::chunk::OpType;
 use crate::bytecode::value::Value;
 use crate::runtime::machine::Vm;
 
 use std::env;
+use std::fs;
 use std::io;
+use std::io::Write;
 use std::process::exit;
 
 mod bytecode;
 mod compiler;
 mod debug;
-mod error;
 mod runtime;
 
 
@@ -31,9 +31,11 @@ fn main() {
 fn repl() {
     let mut input = String::new();
     let mut vm = Vm::new();
-    print!("> ");
 
     loop {
+        print!("> ");
+        io::stdout().flush().ok();
+
         input.clear();
         if io::stdin().read_line(&mut input).is_err() {
             continue;
@@ -44,5 +46,15 @@ fn repl() {
 }
 
 fn run_file(source_path: &str) {
+    let mut vm = Vm::new();
+    let contents = fs::read_to_string(source_path);
 
+    match contents {
+        Ok(c) => {
+            vm.interpret(&c);
+        }
+        Err(e) => {
+            eprintln!("Error reading file: {e}");
+        }
+    }
 }
